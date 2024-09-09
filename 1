@@ -1,17 +1,17 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
-import csv
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+ import tkinter as tk
+ from tkinter import filedialog, messagebox
+ import csv
+ from matplotlib.figure import Figure
+ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-class RentalContract:
+ class RentalContract:
     def __init__(self, contract_id, property_type, manager, amount):
         self.contract_id = contract_id
         self.property_type = property_type
         self.manager = manager
         self.amount = amount
 
-class RentalContractManager:
+ class RentalContractManager:
     def __init__(self):
         self.contracts = []
 
