@@ -1,0 +1,127 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
+import csv
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+class RentalContract:
+    def __init__(self, contract_id, property_type, manager, amount):
+        self.contract_id = contract_id
+        self.property_type = property_type
+        self.manager = manager
+        self.amount = amount
+
+class RentalContractManager:
+    def __init__(self):
+        self.contracts = []
+
+    def load_contracts(self, filename):
+        self.contracts = []
+        try:
+            with open(filename, 'r') as file:  # Убедитесь, что используете правильную кодировку
+                reader = csv.DictReader(file, delimiter=';')
+                for row in reader:
+                    print(f"Загружается строка: {row}")  # Вывод строки для отладки
+                    if len(row) != 4:
+                        raise ValueError(f"Неверное количество полей в строке: {row}")
+                    contract_id = row['contract_id']
+                    property_type = row['property_type']
+                    manager = row['manager']
+                    amount = row['amount']
+
+                    # Проверка суммы
+                    try:
+                        amount = float(amount.strip())  # Удаление лишних пробелов перед конвертацией
+                    except ValueError:
+                        raise ValueError(f"Неверное значение суммы в строке: {row}. Получено: {amount}")
+
+                    self.contracts.append(RentalContract(contract_id, property_type, manager, amount))
+                return True
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить файл: {str(e)}")
+            return False
+
+    def segment_by_property_type(self):
+        segments = {}
+        for contract in self.contracts:
+            if contract.property_type not in segments:
+                segments[contract.property_type] = 0
+            segments[contract.property_type] += contract.amount
+        return segments
+
+    def segment_by_manager(self):
+        segments = {}
+        for contract in self.contracts:
+            if contract.manager not in segments:
+                segments[contract.manager] = 0
+            segments[contract.manager] += contract.amount
+        return segments
+
+    def visualize_pie_chart(self, data, title):
+        fig = Figure(figsize=(6, 4), dpi=100)
+        ax = fig.add_subplot(111)
+        ax.pie(data.values(), labels=data.keys(), autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')
+        ax.set_title(title)
+        return fig
+
+class Application(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Менеджер договоров аренды")
+        self.geometry("800x600")
+
+        self.contract_manager = RentalContractManager()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.load_button = tk.Button(self, text="Загрузить файл", command=self.load_file)
+        self.load_button.pack(pady=10)
+
+        self.property_type_button = tk.Button(self, text="Сегментация по типу недвижимости", command=self.show_property_type_chart)
+        self.property_type_button.pack(pady=5)
+
+        self.manager_button = tk.Button(self, text="Сегментация по менеджерам", command=self.show_manager_chart)
+        self.manager_button.pack(pady=5)
+
+        self.chart_frame = tk.Frame(self)
+        self.chart_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    def load_file(self):
+        filename = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if filename:
+            if self.contract_manager.load_contracts(filename):
+                messagebox.showinfo("Успех")
+    def load_file(self):
+        filename = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if filename:
+            if self.contract_manager.load_contracts(filename):
+                messagebox.showinfo("Успех", "Файл успешно загружен")
+                self.property_type_button.config(state=tk.NORMAL)
+                self.manager_button.config(state=tk.NORMAL)
+            else:
+                self.property_type_button.config(state=tk.DISABLED)
+                self.manager_button.config(state=tk.DISABLED)
+
+    def show_property_type_chart(self):
+        data = self.contract_manager.segment_by_property_type()
+        self.show_chart(data, "Сегментация по типу недвижимости")
+
+    def show_manager_chart(self):
+        data = self.contract_manager.segment_by_manager()
+        self.show_chart(data, "Сегментация по менеджерам")
+
+    def show_chart(self, data, title):
+        for widget in self.chart_frame.winfo_children():
+            widget.destroy()
+
+        fig = self.contract_manager.visualize_pie_chart(data, title)
+        canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+if __name__ == "__main__":
+    app = Application()
+    app.mainloop()
